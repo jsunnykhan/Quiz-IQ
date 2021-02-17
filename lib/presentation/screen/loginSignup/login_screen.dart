@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:quiz_iq/data/datasource/login_datasources.dart';
 
 import '../../widgets/login/edit_text.dart';
 import '../../widgets/login/facebook_google.dart';
@@ -42,15 +43,8 @@ class LoginScreen extends StatelessWidget {
                         FacebookGoogleConTainer(
                             imagePath: 'assets/icons/facebook.svg',
                             onClick: () {
-                              // signInFaceBookStep3(context).whenComplete(() {
-                              //   Navigator.of(context).push(
-                              //     MaterialPageRoute(
-                              //       builder: (context) {
-                              //         return HomeScreen();
-                              //       },
-                              //     ),
-                              //   );
-                              // });
+                              LoginDataSourcesImp().getFacebookLogin();
+                              
                             }),
                         SizedBox(width: 20.0),
                         //!  Google Login

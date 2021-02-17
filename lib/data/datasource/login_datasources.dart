@@ -29,6 +29,7 @@ class LoginDataSourcesImp implements LoginDataSources {
   @override
   Future<LoginModel> getFacebookLogin() async {
     try {
+      final AccessToken re = await FacebookAuth.instance.login();
       final AccessToken accessToken = await FacebookAuth.instance.login(
         permissions: [
           'email',
@@ -40,16 +41,19 @@ class LoginDataSourcesImp implements LoginDataSources {
         ],
         loginBehavior: LoginBehavior.DIALOG_ONLY,
       );
-      print(accessToken);
-
+      print('Token :::: ${accessToken.token}');
       final FacebookAuthCredential credential =
           FacebookAuthProvider.credential(accessToken.token);
 
-      await FirebaseAuth.instance.signInWithCredential(credential);
-    } catch (e) {}
+      final data = await FirebaseAuth.instance.signInWithCredential(credential);
+      final x = await FirebaseAuth.instance.currentUser;
+      print(x.uid);
+    } catch (e) {
+      print('Error $e');
+    }
 
     final userData = await FacebookAuth.instance.getUserData();
-
+    // print(userData);
     return Future.value();
   }
 
