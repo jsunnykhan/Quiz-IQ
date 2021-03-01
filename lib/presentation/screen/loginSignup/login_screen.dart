@@ -7,9 +7,14 @@ import '../../widgets/login/facebook_google.dart';
 import '../../widgets/login/login_header.dart';
 
 class LoginScreen extends StatelessWidget {
+  final _formKey = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    
+
+    String email;
+    String pass;
 
     return Container(
       child: Scaffold(
@@ -44,13 +49,13 @@ class LoginScreen extends StatelessWidget {
                             imagePath: 'assets/icons/facebook.svg',
                             onClick: () {
                               LoginDataSourcesImp().getFacebookLogin();
-                              
                             }),
                         SizedBox(width: 20.0),
                         //!  Google Login
                         FacebookGoogleConTainer(
                           imagePath: 'assets/icons/google.svg',
                           onClick: () {
+                            LoginDataSourcesImp().getGoogleLogin();
                             // signInGoogle().then((value) {
                             //   if (value != null) {
                             //     print('Data Pass');
@@ -69,11 +74,14 @@ class LoginScreen extends StatelessWidget {
 
                     //! Form Page
                     Form(
+                      key: _formKey,
                       child: Column(
                         children: [
-                          EditText(
+                          CustomEditText(
                             labelText: 'Email',
-                            onSaved: (value) {},
+                            onSaved: (value) {
+                             email = value;
+                            },
                             onValidator: (value) {
                               if (value.isEmpty) {
                                 return 'Enter Email';
@@ -83,9 +91,11 @@ class LoginScreen extends StatelessWidget {
                             },
                           ),
                           SizedBox(height: screenSize.height * 0.02),
-                          EditText(
+                          CustomEditText(
                             labelText: 'Password',
-                            onSaved: (value) {},
+                            onSaved: (value) {
+                             pass = value;
+                            },
                             onValidator: (value) {
                               if (value.isEmpty) {
                                 return 'Enter Password';
@@ -100,7 +110,13 @@ class LoginScreen extends StatelessWidget {
                             height: screenSize.height * 0.07,
                             child: RaisedButton(
                               color: Colors.black,
-                              onPressed: () {},
+                              onPressed: () {
+                                if (_formKey.currentState.validate()) {
+                                  _formKey.currentState.save();
+                                  LoginDataSourcesImp()
+                                      .getEmailAndPassLogin(email, pass);
+                                }
+                              },
                               child: Text(
                                 'Sign In',
                                 style: TextStyle(

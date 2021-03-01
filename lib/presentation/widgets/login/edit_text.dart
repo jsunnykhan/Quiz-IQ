@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-class EditText extends StatelessWidget {
+class CustomEditText extends StatelessWidget {
   final Function onValidator;
   final Function onSaved;
   final String labelText;
 
-  const EditText({
+  const CustomEditText({
     this.onValidator,
     this.onSaved,
     this.labelText,

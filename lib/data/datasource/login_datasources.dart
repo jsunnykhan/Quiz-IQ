@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:quiz_iq/core/error/exceptions.dart';
 
 import '../model/login_model.dart';
 
@@ -22,11 +24,36 @@ abstract class LoginDataSources {
 }
 
 class LoginDataSourcesImp implements LoginDataSources {
+  final firebaseAuth = FirebaseAuth.instance;
+  final fireStore = FirebaseFirestore.instance;
+
+  //! login with Email and password
   @override
-  Future<LoginModel> getEmailAndPassLogin(String email, String pass) {
-    throw UnimplementedError();
+  Future<LoginModel> getEmailAndPassLogin(String email, String pass) async {
+    try {
+      await firebaseAuth.signInWithEmailAndPassword(
+          email: email, password: pass);
+    } on FirebaseException catch (e) {
+      if (e.code == 'user-not-found') {
+        throw EmailNotFoundException();
+      } else if (e.code == 'wrong-password') {
+        throw PasswordNotFoundException();
+      }
+    }
+
+    final currentUser = firebaseAuth.currentUser;
+
+    final currenUserHasData =
+        await fireStore.collection('users').doc(currentUser.uid).get();
+
+    if (currenUserHasData.exists) {
+      return LoginModel.formJson(currenUserHasData.data());
+    } else {
+      throw DatabaseException();
+    }
   }
 
+  //! login with Facebook account
   @override
   Future<LoginModel> getFacebookLogin() async {
     try {
@@ -43,46 +70,69 @@ class LoginDataSourcesImp implements LoginDataSources {
       );
       final FacebookAuthCredential credential =
           FacebookAuthProvider.credential(accessToken.token);
-      await FirebaseAuth.instance.signInWithCredential(credential);
-      _registerUser();
+      await firebaseAuth.signInWithCredential(credential);
+      return await _registerUser();
     } catch (e) {
-      print('Error $e');
+      throw ServerException();
     }
-    return Future.value();
+
+    return await _registerUser();
   }
 
+  //! login with Google account
   @override
-  Future<LoginModel> getGoogleLogin() {
-    // TODO: implement getGoogleLogin
-    throw UnimplementedError();
+  Future<LoginModel> getGoogleLogin() async {
+    try {
+      final GoogleSignInAccount googleUser = await GoogleSignIn().signIn();
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final GoogleAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      await firebaseAuth.signInWithCredential(credential);
+
+      return await _registerUser();
+    } catch (e) {
+      throw ServerException();
+    }
   }
 
-  _registerUser() async {
-    final currrentUser = FirebaseAuth.instance.currentUser;
+//! get Data From DB
+  Future<LoginModel> _registerUser() async {
+    final currentUser = firebaseAuth.currentUser;
+
     final model = LoginModel(
-      name: currrentUser.displayName,
-      email: currrentUser.email,
-      photoUrl: currrentUser.photoURL,
+      name: currentUser.displayName,
+      email: currentUser.email,
+      photoUrl: currentUser.photoURL,
     );
-    final fireStore = FirebaseFirestore.instance;
 
-    final currenUserHasData =
-        await fireStore.collection('users').doc(currrentUser.uid).get();
-if(currenUserHasData.exists){
-fireStore
-        .collection('users')
-        .doc(currrentUser.uid)
-        .update(model.toJson())
-        .then((value) => print('Update success'))
-        .catchError((onError) => print(onError));
-}else{
-fireStore
-        .collection('users')
-        .doc(currrentUser.uid)
-        .set(model.toJson())
-        .then((value) => print('Set success'))
-        .catchError((onError) => print(onError));
-}
-    
+    try {
+      final currenUserHasData =
+          await fireStore.collection('users').doc(currentUser.uid).get();
+      if (currenUserHasData.exists) {
+        fireStore
+            .collection('users')
+            .doc(currentUser.uid)
+            .update(model.toJson())
+            .then((value) => print('Update success'))
+            .catchError((onError) => print(onError));
+      } else {
+        fireStore
+            .collection('users')
+            .doc(currentUser.uid)
+            .set(model.toJson())
+            .then((value) => print('Set success'))
+            .catchError((onError) => print(onError));
+      }
+      return model;
+    } catch (e) {
+      throw DatabaseException();
+    }
   }
 }
+  
