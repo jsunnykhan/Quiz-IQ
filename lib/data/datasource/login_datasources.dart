@@ -76,7 +76,7 @@ class LoginDataSourcesImp implements LoginDataSources {
       throw ServerException();
     }
 
-    return await _registerUser();
+    
   }
 
   //! login with Google account
